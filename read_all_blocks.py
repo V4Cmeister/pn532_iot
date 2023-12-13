@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
     for block_number in range(0,65):
         block_data = read_block(pn532, uid, block_number)
+        hex_values = 'x'.join([f'{byte:02x}' for byte in block_data])
         print(F"Data in Block {block_number} is:")
-        print(block_data)
+        print(hex_values)
         print("\n")
