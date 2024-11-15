@@ -1,9 +1,11 @@
 import sqlite3
 from datetime import datetime, timedelta
 
-
+PATH = "data/flaschen_database.db"
 # Connect to the SQLite database
-conn = sqlite3.connect("flaschen_database.db")
+
+
+conn = sqlite3.connect(PATH)
 cursor = conn.cursor()
 
 data = cursor.execute('''
@@ -24,6 +26,7 @@ def update_has_error(flaschen_id, has_error):
     except Exception as e:
         conn.rollback()
         print(f"Error occurred while updating has_error for Flaschen_ID {flaschen_id}: {e}")
+
 
 # Example usage: Update has_error for Flaschen_ID 1 to True
 update_has_error(1, True)
