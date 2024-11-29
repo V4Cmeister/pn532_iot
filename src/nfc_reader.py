@@ -1,3 +1,4 @@
+# Example how to build a NFCReader that implements an Interface
 from abc import ABC, abstractmethod
 import board
 import busio
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_KEY_A = bytes([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
 BLOCK_COUNT = 64
 
+
 class NFCReaderInterface(ABC):
 
     @abstractmethod
@@ -27,40 +29,48 @@ class NFCReaderInterface(ABC):
     @abstractmethod
     def read_all_blocks(self, uid):
         pass
+
     @abstractmethod
     def write_block(self, uid, block_number, data):
         pass
 
 
-
-class NFCReader(PN532_SPI, NFCReaderInterface):
+class NFCReader(NFCReaderInterface):
     def __init__(self):
-        self.pn532 = self.config_pn532()
+        self._pn532 = self.config()
 
-    def config_pn532(self):
+    def __getattr__(self, name):
+        """
+        Delegate any call to PN532_SPI if it's not explicitly defined in NFCReader.
+        """
+        return getattr(self._pn532, name)
+
+    def config(self):
         try:
             spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
             cs_pin = DigitalInOut(board.D8)
             pn532 = PN532_SPI(spi, cs_pin, debug=False)
 
             ic, ver, rev, support = pn532.firmware_version
-            logging.info("Found PN532 with firmware version: %d.%d", ver, rev)
+            logger.info("Found PN532 with firmware version: %d.%d", ver, rev)
 
             # Configure PN532 to communicate with MiFare cards
             pn532.SAM_configuration()
             return pn532
         except Exception as e:
-            logging.error("Failed to configure PN532: %s", e)
+            logger.error("Failed to configure PN532: %s", e)
             raise
 
     def read_block(self, uid, block_number):
         try:
-            authenticated = self.mifare_classic_authenticate_block(uid, block_number, 0x60, KEY_A = DEFAULT_KEY_A)
+            authenticated = self._pn532.mifare_classic_authenticate_block(
+                uid, block_number, 0x60, key=DEFAULT_KEY_A
+            )
             if not authenticated:
                 logger.error("Failed to authenticate block %d", block_number)
                 return None
 
-            block_data = self.mifare_classic_read_block(block_number)
+            block_data = self._pn532.mifare_classic_read_block(block_number)
             if block_data is None:
                 logger.error("Failed to read block %d", block_number)
                 return None
@@ -69,7 +79,7 @@ class NFCReader(PN532_SPI, NFCReaderInterface):
         except Exception as e:
             logger.exception("Error reading block %d: %s", block_number, e)
             return None
-        
+
     def read_all_blocks(self, uid):
         blocks_data = []
         for block_number in range(BLOCK_COUNT):
@@ -80,6 +90,25 @@ class NFCReader(PN532_SPI, NFCReaderInterface):
                 logger.warning("No data read from Block %d", block_number)
         return blocks_data
 
+    def write_block(self, uid, block_number, data):
+        try:
+            authenticated = self._pn532.mifare_classic_authenticate_block(
+                uid, block_number, 0x60, key=DEFAULT_KEY_A
+            )
+            if not authenticated:
+                logger.error("Failed to authenticate block %d for writing", block_number)
+                return False
+
+            success = self._pn532.mifare_classic_write_block(block_number, data)
+            if not success:
+                logger.error("Failed to write to block %d", block_number)
+                return False
+
+            logger.info("Successfully wrote data to block %d", block_number)
+            return True
+        except Exception as e:
+            logger.exception("Error writing block %d: %s", block_number, e)
+            return False
 
 
 if __name__ == "__main__":
@@ -97,5 +126,5 @@ if __name__ == "__main__":
 
     blocks_data = nfc_reader.read_all_blocks(uid)
     for block_number, block_data in enumerate(blocks_data):
-        hex_values = ' '.join([f'{byte:02x}' for byte in block_data])
+        hex_values = " ".join([f"{byte:02x}" for byte in block_data])
         logger.info("Data in Block %d: %s", block_number, hex_values)
