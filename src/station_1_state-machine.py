@@ -1,11 +1,15 @@
 import logging
+from nfc_reader import NFCReader
 
 # Initialize logger
 logging.basicConfig(level=logging.DEBUG)
 
+nfc_reader_1 = None
+
 class StateMachine:
-    def __init__(self):
+    def __init__(self, reader):
         self.current_state = 'State0'
+        self.reader = reader
         self.states = {
             'State0': State0(self),
             'State1': State1(self),
@@ -32,7 +36,9 @@ class State0(State):
         logging.info("Initializing RFID reader...")
         
         # Simulate RFID reader initialization (replace with actual initialization code)
-        init_successful = True  # Simulate success
+        self.machine.reader = NFCReader()
+        if self.machine.reader:
+            init_successful = True  # Simulate success
         
         if init_successful:
             logging.info("RFID reader initialized successfully.")
@@ -47,7 +53,7 @@ class State1(State):
         
         # Simulate card detection (replace with actual detection code)
         uid = [45, 162, 193, 56]  # Placeholder for RFID detection
-        
+        uid = self.machine.reader.read_passive_target(timeout=0.5)
         if uid is None:
             logging.warning("No card detected. Retrying...")
             self.machine.current_state = 'State1'  # Wait again
@@ -97,6 +103,6 @@ class State5(State):
 
 # Main execution
 if __name__ == '__main__':
-    machine = StateMachine()
+    machine = StateMachine(nfc_reader_1)
     machine.run()
     logging.info("Stopped Execution. Please rerun the program to start again.")
