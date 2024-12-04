@@ -2,6 +2,7 @@ import logging
 from nfc_reader import NFCReader
 
 # Initialize logger
+# Currently in command line, make output file like in logging example
 logging.basicConfig(level=logging.DEBUG)
 
 nfc_reader_1 = None
