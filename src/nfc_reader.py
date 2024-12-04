@@ -8,6 +8,7 @@ import logging
 
 
 # Configure logging
+# TODO: Make sure to use the logger from station_1, so it is not overwritten here
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ class NFCReaderInterface(ABC):
     @abstractmethod
     def config(self):
         pass
-
+    @abstractmethod
+    def add_logger(self, filepath : str):
+        pass
     @abstractmethod
     def read_block(self, uid : bytes , block_number : int):
         pass
@@ -44,7 +47,9 @@ class NFCReader(NFCReaderInterface):
         Delegate any call to PN532_SPI if it's not explicitly defined in NFCReader.
         """
         return getattr(self._pn532, name)
-
+    # TODO: add logging config
+    def add_logger(self, filepath : str):
+        pass
     def config(self):
         try:
             spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
@@ -92,6 +97,20 @@ class NFCReader(NFCReaderInterface):
 
     def write_block(self, uid, block_number, data):
         try:
+            # Validate `uid` type
+            if not isinstance(uid, bytes):
+                logger.error("UID must be of type 'bytes'. Provided type: %s", type(uid))
+                return False
+
+            # Validate `data` type and length
+            if not isinstance(data, bytes) or len(data) != 16:
+                logger.error(
+                    "Data must be a 'bytes' object of exactly 16 bytes. Provided: type=%s, length=%d",
+                    type(data),
+                    len(data) if isinstance(data, bytes) else 0,
+                )
+                return False
+        
             authenticated = self._pn532.mifare_classic_authenticate_block(
                 uid, block_number, 0x60, key=DEFAULT_KEY_A
             )
