@@ -9,12 +9,12 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 logger.addHandler(console_handler)
 
-nfc_reader_1 = None
+
 
 class StateMachine:
-    def __init__(self, reader):
+    def __init__(self):
         self.current_state = 'State0'
-        self.reader = reader
+        self.reader = None
         self.states = {
             'State0': State0(self),
             'State1': State1(self),
@@ -25,7 +25,9 @@ class StateMachine:
         }
 
     def run(self):
-        while self.current_state not in ['State5']:
+        # Run the state machine until it reaches a terminal state
+        # To run indefinitely, remove the terminal states from the while loop
+        while self.current_state not in ['State4','State5']:
             state = self.states[self.current_state]
             state.run()  # Run the current state
 
@@ -108,6 +110,6 @@ class State5(State):
 
 # Main execution
 if __name__ == '__main__':
-    machine = StateMachine(nfc_reader_1)
+    machine = StateMachine()
     machine.run()
     logging.info("Stopped Execution. Please rerun the program to start again.")
