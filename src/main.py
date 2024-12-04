@@ -1,8 +1,13 @@
 import nfc_reader
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
-    nfc_reader = NFCReader()
+    nfc_reader = nfc_reader.NFCReader()
 
     logger.info("Waiting for RFID/NFC card...")
     while True:
