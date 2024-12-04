@@ -23,15 +23,15 @@ class NFCReaderInterface(ABC):
         pass
 
     @abstractmethod
-    def read_block(self, uid, block_number):
+    def read_block(self, uid : bytes , block_number : int):
         pass
 
     @abstractmethod
-    def read_all_blocks(self, uid):
+    def read_all_blocks(self, uid : int):
         pass
 
     @abstractmethod
-    def write_block(self, uid, block_number, data):
+    def write_block(self, uid : bytes, block_number : int, data : bytes):
         pass
 
 
@@ -110,6 +110,25 @@ class NFCReader(NFCReaderInterface):
             logger.exception("Error writing block %d: %s", block_number, e)
             return False
 
+    def write_block(self, uid, block_number, data):
+        try:
+            authenticated = self._pn532.mifare_classic_authenticate_block(
+                uid, block_number, 0x60, key=DEFAULT_KEY_A
+            )
+            if not authenticated:
+                logger.error("Failed to authenticate block %d for writing", block_number)
+                return False
+
+            success = self._pn532.mifare_classic_write_block(block_number, data)
+            if not success:
+                logger.error("Failed to write to block %d", block_number)
+                return False
+
+            logger.info("Successfully wrote data to block %d", block_number)
+            return True
+        except Exception as e:
+            logger.exception("Error writing block %d: %s", block_number, e)
+            return False
 
 if __name__ == "__main__":
 
@@ -124,6 +143,15 @@ if __name__ == "__main__":
         logger.info("Found card with UID: %s", [hex(i) for i in uid])
         break
 
+    uid_bytes = bytes(uid)
+    uid_16 = bytes([
+    0x93, 0x5f, 0xa7, 0x91,  # First 4 bytes
+    0x01, 0x02, 0x03, 0x04,  # Next 4 bytes
+    0x05, 0x06, 0x07, 0x08,  # Next 4 bytes
+    0x09, 0x0A, 0x0B, 0x0C   # Last 4 bytes
+    ])
+    nfc_reader.write_block(uid = uid_bytes, block_number = 2, data = uid_16)
+    
     blocks_data = nfc_reader.read_all_blocks(uid)
     for block_number, block_data in enumerate(blocks_data):
         hex_values = " ".join([f"{byte:02x}" for byte in block_data])
