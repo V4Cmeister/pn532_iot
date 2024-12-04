@@ -1,8 +1,13 @@
 import logging
 from nfc_reader import NFCReader
 
-# Initialize logger
-logging.basicConfig(level=logging.DEBUG)
+# Configure the logger
+logger = logging.getLogger("shared_logger")
+logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+logger.addHandler(console_handler)
 
 nfc_reader_1 = None
 
