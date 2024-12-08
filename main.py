@@ -151,6 +151,6 @@ class StateMachine:
             state.run()
 
 # Hauptprogramm
-if __name__ == "__main__":
+if __name__ == "__main__":  
     machine = StateMachine()
     machine.run()
